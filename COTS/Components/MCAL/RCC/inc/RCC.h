@@ -4,7 +4,7 @@
 #include "STD_TYPES.h"
 
 #define RCC_CLK_HSI_ON_MASK         0x00000000
-#define RCC_CLK_HSI_RDY_MASK        0x00000001
+#define RCC_CLK_HSI_RDY_MASK        0x00000002
 
 #define RCC_CLK_HSE_ON_MASK         0x00010000
 #define RCC_CLK_HSE_RDY_MASK        0x00020000
@@ -61,6 +61,16 @@
 #define RCC_PLL_P_6_MASK            2
 #define RCC_PLL_P_8_MASK            3
 
+// Macros for VCO frequency validation
+#define RCC_PLL_VCO_MIN 1000000  // 1 MHz
+#define RCC_PLL_VCO_MAX 2000000  // 2 MHz
+#define RCC_PLL_VCO_OUTPUT_MIN 192000000 // 192 MHz
+#define RCC_PLL_VCO_OUTPUT_MAX 432000000 // 432 MHz
+
+#define RCC_HSI_CLK_CFG 16000000 // 16 MHz
+#define RCC_HSE_CLK_CFG 8000000  // 8 MHz
+
+
 // Bus numbers
 #define RCC_BUS_AHB1 0
 #define RCC_BUS_AHB2 1
@@ -110,6 +120,7 @@ typedef enum {
     RCC_enuError_NOK,
     RCC_enuError_OK,
     RCC_enuError_INVALID_CLK_TYPE,
+    RCC_enuError_CLK_READY,
     RCC_enuError_CLK_NOT_READY,
     RCC_enuError_NULL_POINTER,
     RCC_enuError_ClkIsAlreadySet,
@@ -118,15 +129,16 @@ typedef enum {
     RCC_enuError_INVALID_PLL_M_CFG,
     RCC_enuError_INVALID_PLL_N_CFG,
     RCC_enuError_INVALID_PLL_P_CFG,
-    RCC_enuError_INVALID_PERIPHERAL
-
-}RCC_enuErrorStatus_t;
+    RCC_enuError_INVALID_PERIPHERAL,
+    RCC_enuError_INVALID_VCO_INPUT_FREQ,
+    RCC_enuError_INVALID_VCO_OUTPUT_FREQ,
+} RCC_enuErrorStatus_t;
 
 typedef enum {
     RCC_enuClk_HSI,
     RCC_enuClk_HSE,
     RCC_enuClk_PLL
-}RCC_enuClk_t;
+} RCC_enuClk_t;
 
 typedef struct
 {
@@ -145,6 +157,6 @@ RCC_enuClk_t RCC_enuGetSysClk(void);
 RCC_enuErrorStatus_t RCC_enuSetPLLCfg(RCC_strPLLCfg_t* Addr_PLLCfg);
 RCC_enuErrorStatus_t RCC_enuEnablePeripheralClk(uint64_t Copy_peripheral);
 RCC_enuErrorStatus_t RCC_enuDisablePeripheralClk(uint64_t Copy_peripheral);
-void RCC_vInit(void);
+void RCC_vPLL_Init(void);
 
 #endif //RCC_H_

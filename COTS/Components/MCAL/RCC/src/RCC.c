@@ -84,7 +84,7 @@ RCC_enuErrorStatus_t RCC_enuEnableClk(RCC_enuClk_t Copy_enuClk)
 {
     RCC_enuErrorStatus_t Loc_enuErrorStatus = RCC_enuError_OK;
     uint32_t Loc_u32Timeout = 0;
-    uint8_t Loc_u8State;
+    uint8_t Loc_u8State=0;
     switch (Copy_enuClk)
     {
     case RCC_enuClk_HSI:
@@ -179,8 +179,8 @@ RCC_enuErrorStatus_t RCC_enuGetClkStatus(RCC_enuClk_t Copy_enuClk, uint32_t *Add
             Loc_enuErrorStatus = RCC_enuError_INVALID_CLK_TYPE;
             break;
         }
-        return Loc_enuErrorStatus;
     }
+    return Loc_enuErrorStatus;
 }
 
 RCC_enuClk_t RCC_enuGetSysClk(void)
@@ -190,9 +190,9 @@ RCC_enuClk_t RCC_enuGetSysClk(void)
 
 RCC_enuErrorStatus_t RCC_enuSelectSysClk(RCC_enuClk_t Copy_enuClk)
 {
-    uint32_t Loc_u32Temp = RCC->RCC_CFGR;
-    uint32_t *Loc_u32ClkStatus; // check for dtype
-    RCC_enuErrorStatus_t Loc_enuErrorStatus = RCC_enuGetClkStatus(Copy_enuClk, Loc_u32ClkStatus);
+    uint32_t Loc_u32Temp = 0;
+    uint32_t Loc_u32ClkStatus = 0; // check for dtype
+    RCC_enuErrorStatus_t Loc_enuErrorStatus = RCC_enuGetClkStatus(Copy_enuClk, &Loc_u32ClkStatus);
     if (RCC_enuGetSysClk() == Copy_enuClk)
     {
         Loc_enuErrorStatus = RCC_enuError_ClkIsAlreadySet;
@@ -201,7 +201,7 @@ RCC_enuErrorStatus_t RCC_enuSelectSysClk(RCC_enuClk_t Copy_enuClk)
     {
         Loc_enuErrorStatus = RCC_enuError_INVALID_CLK_TYPE;
     }
-    else if (*Loc_u32ClkStatus == RCC_NOT_READY)
+    else if (Loc_u32ClkStatus == RCC_NOT_READY)
     {
         Loc_enuErrorStatus = RCC_enuError_CLK_NOT_READY;
     }
@@ -217,20 +217,25 @@ RCC_enuErrorStatus_t RCC_enuSetPLLCfg(RCC_strPLLCfg_t* Addr_PLLCfg)
 {
     uint32_t Loc_u32PLLClkStatus;
     uint32_t Loc_u32SysClkStatus_PLLCfg;
+    uint32_t Loc_u32VCOInputFreq = 0;
+    uint32_t Loc_u32VCOOutputFreq = 0;
+
     RCC_enuErrorStatus_t Loc_enuErrorStatus = RCC_enuError_OK;
     RCC_enuErrorStatus_t Loc_enuPLLClkErrorStatus = RCC_enuGetClkStatus(RCC_enuClk_PLL, &Loc_u32PLLClkStatus);
     RCC_enuErrorStatus_t Loc_enuSysClkErrorStatus_PLLCfg = RCC_enuGetClkStatus(Addr_PLLCfg->PLL_CLK, &Loc_u32SysClkStatus_PLLCfg);
-    if (Loc_enuPLLClkErrorStatus != RCC_enuError_OK) // 7nksha
+
+    // Existing checks
+    if (Loc_enuPLLClkErrorStatus != RCC_enuError_OK)
     {
         Loc_enuErrorStatus = RCC_enuError_INVALID_CLK_TYPE;
     }
-    else if (Loc_enuSysClkErrorStatus_PLLCfg != RCC_enuError_OK) // 7nksha
+    else if (Loc_enuSysClkErrorStatus_PLLCfg != RCC_enuError_OK)
     {
         Loc_enuErrorStatus = RCC_enuError_INVALID_CLK_TYPE;
     }
-    else if (Loc_u32PLLClkStatus == RCC_NOT_READY)
+    else if (Loc_u32PLLClkStatus == RCC_READY)
     {
-        Loc_enuErrorStatus = RCC_enuError_CLK_NOT_READY;
+        Loc_enuErrorStatus = RCC_enuError_CLK_READY;
     }
     else if (Loc_u32PLLClkStatus)
     {
@@ -239,14 +244,6 @@ RCC_enuErrorStatus_t RCC_enuSetPLLCfg(RCC_strPLLCfg_t* Addr_PLLCfg)
     else if (Loc_u32SysClkStatus_PLLCfg != RCC_enuError_OK)
     {
         Loc_enuErrorStatus = RCC_enuError_INVALID_CLK_TYPE;
-    }
-    else if (Addr_PLLCfg->PLL_CLK == RCC_enuClk_HSE)
-    {
-        RCC->RCC_PLLCFGR |= RCC_PLLCFGR_PLLSRC_MASK;
-    }
-    else if (Addr_PLLCfg->PLL_CLK == RCC_enuClk_HSI)
-    {
-        RCC->RCC_PLLCFGR &= (~RCC_PLLCFGR_PLLSRC_MASK);
     }
     else if (Addr_PLLCfg->PLL_Q < RCC_PLLCFGR_Q_LOWER_VAL || Addr_PLLCfg->PLL_Q > RCC_PLLCFGR_Q_HIGHER_VAL)
     {
@@ -262,22 +259,56 @@ RCC_enuErrorStatus_t RCC_enuSetPLLCfg(RCC_strPLLCfg_t* Addr_PLLCfg)
     }
     else
     {
+        // Calculate VCO Input Frequency
+        if (Addr_PLLCfg->PLL_CLK == RCC_enuClk_HSE)
+        {
+            Loc_u32VCOInputFreq = RCC_HSE_CLK_CFG / Addr_PLLCfg->PLL_M;
+        }
+        else if (Addr_PLLCfg->PLL_CLK == RCC_enuClk_HSI)
+        {
+            Loc_u32VCOInputFreq = RCC_HSI_CLK_CFG / Addr_PLLCfg->PLL_M;
+        }
+
+        // Check VCO Input Frequency Range
+        if (Loc_u32VCOInputFreq < RCC_PLL_VCO_MIN || Loc_u32VCOInputFreq > RCC_PLL_VCO_MAX)
+        {
+            Loc_enuErrorStatus = RCC_enuError_INVALID_VCO_INPUT_FREQ;
+        }
+
+        // Calculate VCO Output Frequency
+        Loc_u32VCOOutputFreq = Loc_u32VCOInputFreq * Addr_PLLCfg->PLL_N;
+
+        // Check VCO Output Frequency Range
+        if (Loc_u32VCOOutputFreq < RCC_PLL_VCO_OUTPUT_MIN || Loc_u32VCOOutputFreq > RCC_PLL_VCO_OUTPUT_MAX)
+        {
+            Loc_enuErrorStatus = RCC_enuError_INVALID_VCO_OUTPUT_FREQ;
+        }
+
+        if (Addr_PLLCfg->PLL_CLK == RCC_enuClk_HSE)
+        {
+            RCC->RCC_PLLCFGR |= RCC_PLLCFGR_PLLSRC_MASK;
+        }
+        else if (Addr_PLLCfg->PLL_CLK == RCC_enuClk_HSI)
+        {
+            RCC->RCC_PLLCFGR &= (~RCC_PLLCFGR_PLLSRC_MASK);
+        }
+
         switch (Addr_PLLCfg->PLL_P)
         {
             case RCC_PLL_P_2_MASK:
-                (RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_2_MASK << RCC_PLLCFGR_P)));
+                RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_2_MASK << RCC_PLLCFGR_P));
                 break;
 
             case RCC_PLL_P_4_MASK:
-                (RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_4_MASK << RCC_PLLCFGR_P)));
+                RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_4_MASK << RCC_PLLCFGR_P));
                 break;
 
             case RCC_PLL_P_6_MASK:
-                (RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_6_MASK << RCC_PLLCFGR_P)));
+                RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_6_MASK << RCC_PLLCFGR_P));
                 break;
 
             case RCC_PLL_P_8_MASK:
-                (RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_8_MASK << RCC_PLLCFGR_P)));
+                RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_P_MASK) | (RCC_PLL_P_8_MASK << RCC_PLLCFGR_P));
                 break;
 
             default:
@@ -287,11 +318,12 @@ RCC_enuErrorStatus_t RCC_enuSetPLLCfg(RCC_strPLLCfg_t* Addr_PLLCfg)
 
         RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_N_MASK) | (Addr_PLLCfg->PLL_N << RCC_PLLCFGR_N));
         RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_Q_MASK) | (Addr_PLLCfg->PLL_Q << RCC_PLLCFGR_Q));
-        RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_M_MASK) | (Addr_PLLCfg->PLL_M ));
+        RCC->RCC_PLLCFGR = ((RCC->RCC_PLLCFGR & RCC_PLL_M_MASK) | (Addr_PLLCfg->PLL_M));
     }
 
     return Loc_enuErrorStatus;
 }
+
 
 static bool RCC_IsValidPeripheral(uint64_t peripheral) {
     int low = 0;
@@ -386,4 +418,31 @@ RCC_enuErrorStatus_t RCC_enuDisablePeripheralClk(uint64_t Copy_peripheral)
     return Loc_enuErrorStatus;
 }
 
-void RCC_vInit(void);
+void RCC_vPLL_Init(void)
+{
+    RCC_strPLLCfg_t Loc_PLLcfg = {
+        .PLL_CLK = RCC_enuClk_HSI,
+        .PLL_M = 16,
+        .PLL_N = 320,
+        .PLL_P = RCC_PLL_P_8_MASK,
+        .PLL_Q = 15};
+
+    // Variables to store function return statuses
+    RCC_enuErrorStatus_t Loc_enuDisableClkStatus;
+    RCC_enuErrorStatus_t Loc_enuSetPLLCfgStatus;
+    RCC_enuErrorStatus_t Loc_enuEnableClkStatus;
+    RCC_enuErrorStatus_t Loc_enuSelectSysClkStatus;
+
+    // Disable PLL clock
+    Loc_enuDisableClkStatus = RCC_enuDisableClk(RCC_enuClk_PLL);
+
+    // Configure PLL
+    Loc_enuSetPLLCfgStatus = RCC_enuSetPLLCfg(&Loc_PLLcfg);
+
+    // Enable PLL clock
+    Loc_enuEnableClkStatus = RCC_enuEnableClk(RCC_enuClk_PLL);
+
+    // Select PLL as system clock
+    Loc_enuSelectSysClkStatus = RCC_enuSelectSysClk(RCC_enuClk_PLL);
+
+}
