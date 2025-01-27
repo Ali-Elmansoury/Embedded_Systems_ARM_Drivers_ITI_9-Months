@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 # project name + defining used languages
-project(GPIO C) 
+project(MGPIO C) 
 
 # set the compiler to avr-gcc
 set(CMAKE_SYSTEM_PROCESSOR arm)
