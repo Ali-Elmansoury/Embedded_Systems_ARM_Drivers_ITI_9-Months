@@ -1,0 +1,72 @@
+#ifndef HSEVEN_SEG_H
+#define HSEVEN_SEG_H
+
+#include "STD_TYPES.h"
+
+#define HSEVEN_SEG_PINA0 0x00
+#define HSEVEN_SEG_PINA1 0x01
+#define HSEVEN_SEG_PINA2 0x02
+#define HSEVEN_SEG_PINA3 0x03
+#define HSEVEN_SEG_PINA4 0x04
+#define HSEVEN_SEG_PINA5 0x05
+#define HSEVEN_SEG_PINA6 0x06
+#define HSEVEN_SEG_PINA7 0x07
+
+#define HSEVEN_SEG_PINB0 0x10
+#define HSEVEN_SEG_PINB1 0x11
+#define HSEVEN_SEG_PINB2 0x12
+#define HSEVEN_SEG_PINB3 0x13
+#define HSEVEN_SEG_PINB4 0x14
+#define HSEVEN_SEG_PINB5 0x15
+#define HSEVEN_SEG_PINB6 0x16
+#define HSEVEN_SEG_PINB7 0x17
+
+#define HSEVEN_SEG_PINC0 0x20
+#define HSEVEN_SEG_PINC1 0x21
+#define HSEVEN_SEG_PINC2 0x22
+#define HSEVEN_SEG_PINC3 0x23
+#define HSEVEN_SEG_PINC4 0x24
+#define HSEVEN_SEG_PINC5 0x25
+#define HSEVEN_SEG_PINC6 0x26
+#define HSEVEN_SEG_PINC7 0x27
+
+#define HSEVEN_SEG_PIND0 0x30
+#define HSEVEN_SEG_PIND1 0x31
+#define HSEVEN_SEG_PIND2 0x32
+#define HSEVEN_SEG_PIND3 0x33
+#define HSEVEN_SEG_PIND4 0x34
+#define HSEVEN_SEG_PIND5 0x35
+#define HSEVEN_SEG_PIND6 0x36
+#define HSEVEN_SEG_PIND7 0x37
+
+
+typedef enum
+{
+  HSEVEN_SEG_enuErrorStatus_OK,
+  HSEVEN_SEG_enuErrorStatus_NOK,
+  HSEVEN_SEG_enuErrorStatus_NULLPTR,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN_CFG,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PORT,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN_MODE,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN_OUTPUT_TYPE,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN_PULL_TYPE,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN_SPEED,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN_ALT_FUNCTION,
+  HSEVEN_SEG_enuErrorStatus_INVALID_PIN_STATE,
+  HSEVEN_SEG_enuError_INVALID_NUM_OF_SEVEN_SEG,
+  HSEVEN_SEG_enuError_INVALID_SEVEN_SEG_CONNECTION,
+  HSEVEN_SEG_enuError_INVALID_SEVEN_SEG_CONFIG
+} HSEVENSEG_enuErrorStatus_t;
+
+typedef enum
+{
+  HSEVEN_SEG_enuCommon_Cathode,
+  HSEVEN_SEG_enuCommon_Anode
+} HSEVEN_SEG_enuSevenSegConnection_t;
+
+HSEVENSEG_enuErrorStatus_t HSEVENSEG_vInit(void);
+HSEVENSEG_enuErrorStatus_t HSEVENSEG_vSetValue(uint8_t Copy_enuSevenSegNum, uint8_t Copy_u8Value);
+HSEVENSEG_enuErrorStatus_t HSEVENSEG_enuSetMultiDigitValue(uint16_t Copy_u16Value);
+
+#endif // HSEVEN_SEG_H
